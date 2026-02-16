@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Happy Valentine's Day</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+    font-family:'Georgia','Times New Roman',serif;
+    min-height:100vh;
+    background:linear-gradient(135deg,#ff9a9e 0%,#fecfef 50%,#fecfef 100%);
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    padding:15px;
+}
+.container{width:100%;max-width:500px;margin:0 auto;}
+.hidden{display:none!important;}
+
+.card{
+    background:white;
+    border-radius:20px;
+    box-shadow:0 10px 40px rgba(0,0,0,0.12);
+    overflow:hidden;
+    margin-top:10px;
+}
+.card-header{
+    background:linear-gradient(135deg,#ff758c 0%,#ff7eb3 100%);
+    padding:35px 25px;
+    text-align:center;
+}
+.card-header h1{color:white;}
+.card-body{padding:30px 25px;}
+.recipient-name{
+    text-align:center;
+    font-size:1.6rem;
+    color:#e74c3c;
+    margin-bottom:20px;
+    font-style:italic;
+}
+.message{
+    font-size:1.05rem;
+    line-height:1.8;
+    color:#555;
+    text-align:center;
+    white-space:pre-wrap;
+}
+.signature{
+    text-align:right;
+    margin-top:25px;
+    font-style:italic;
+    color:#e74c3c;
+}
+
+#photoGallery img{
+    width:100%;
+    max-width:400px;
+    margin:10px 0;
+    border-radius:15px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.15);
+}
+
+.envelope-wrapper{
+    margin-top:100px;
+    text-align:center;
+    cursor:pointer;
+}
+.envelope{
+    position:relative;
+    width:280px;
+    height:180px;
+    margin:auto;
+    perspective:1000px;
+}
+.envelope-body{
+    position:absolute;
+    width:100%;
+    height:100%;
+    background:#ff6b8a;
+    border-radius:10px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.2);
+}
+.envelope-flap{
+    position:absolute;
+    width:100%;
+    height:100%;
+    background:#ff8fab;
+    clip-path:polygon(0 0,50% 65%,100% 0);
+    transform-origin:top;
+    transition:transform 0.8s ease;
+    border-radius:10px;
+}
+.envelope.open .envelope-flap{
+    transform:rotateX(180deg);
+}
+.envelope-heart{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    font-size:42px;
+}
+.tap-text{
+    margin-top:20px;
+    font-style:italic;
+    color:#e74c3c;
+}
+
+.decorative-hearts{
+    position:fixed;
+    width:100%;
+    height:100%;
+    top:0;
+    left:0;
+    pointer-events:none;
+    z-index:-1;
+}
+.floating-heart{
+    position:absolute;
+    animation:float 6s infinite ease-in-out;
+    opacity:0.25;
+}
+@keyframes float{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-20px);}
+}
+</style>
+</head>
+<body>
+
+<div class="decorative-hearts" id="floatingHearts"></div>
+
+<!-- Envelope -->
+<div class="container hidden" id="envelopeContainer">
+    <div class="envelope-wrapper" onclick="openEnvelope()">
+        <div class="envelope">
+            <div class="envelope-body"></div>
+            <div class="envelope-flap"></div>
+            <div class="envelope-heart">💌</div>
+        </div>
+        <div class="tap-text">Tap to Open</div>
+    </div>
+</div>
+
+<!-- Creator -->
+<div class="container" id="creatorContainer">
+    <h2 style="text-align:center;color:#e74c3c;margin:30px 0;">
+        💕 Create Your Valentine's Card
+    </h2>
+    <input id="recipientName" placeholder="Her Name" style="width:100%;padding:10px;margin-bottom:10px;">
+    <textarea id="message" placeholder="Your Message" style="width:100%;padding:10px;margin-bottom:10px;"></textarea>
+    <input id="senderName" placeholder="Your Name" style="width:100%;padding:10px;margin-bottom:10px;">
+
+    <textarea id="photoLinks" 
+    placeholder="Paste DIRECT image links here (one per line)"
+    style="width:100%;padding:10px;margin-bottom:10px;"></textarea>
+
+    <button onclick="generateCard()" 
+    style="width:100%;padding:12px;background:#ff758c;color:white;border:none;">
+        Generate Link
+    </button>
+
+    <div id="generatedLink" 
+    style="margin-top:15px;font-size:0.9rem;word-break:break-all;"></div>
+</div>
+
+<!-- Card -->
+<div class="container hidden" id="cardContainer">
+    <div class="card">
+        <div class="card-header">
+            <h1>Happy Valentine's Day!</h1>
+        </div>
+        <div class="card-body">
+            <div class="recipient-name" id="displayRecipient"></div>
+            <div class="message" id="displayMessage"></div>
+            <div id="photoGallery" style="margin-top:20px;text-align:center;"></div>
+            <div class="signature" id="displaySignature"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+window.onload=function(){
+    const params=new URLSearchParams(window.location.search);
+    const data=params.get("data");
+    if(data){
+        showCard(data);
+    }else{
+        createFloatingHearts();
+    }
+};
+
+function generateCard(){
+    const r=document.getElementById("recipientName").value;
+    const m=document.getElementById("message").value;
+    const s=document.getElementById("senderName").value;
+    const linksText=document.getElementById("photoLinks").value;
+
+    if(!r||!m||!s){
+        alert("Fill all fields");
+        return;
+    }
+
+    const photos = linksText
+        .split("\n")
+        .map(link => link.trim())
+        .filter(link => link !== "");
+
+    const data=btoa(JSON.stringify({
+        recipient:r,
+        message:m,
+        sender:s,
+        photos:photos
+    }));
+
+    const link=window.location.href.split("?")[0]+"?data="+data;
+    document.getElementById("generatedLink").textContent=link;
+}
+
+function showCard(encoded){
+    try{
+        const decoded=JSON.parse(atob(encoded));
+        document.getElementById("creatorContainer").classList.add("hidden");
+        document.getElementById("envelopeContainer").classList.remove("hidden");
+
+        document.getElementById("displayRecipient").textContent="Dear "+decoded.recipient;
+        document.getElementById("displayMessage").textContent=decoded.message;
+        document.getElementById("displaySignature").textContent="With love,\n"+decoded.sender;
+
+        const gallery=document.getElementById("photoGallery");
+        gallery.innerHTML="";
+
+        if(decoded.photos){
+            decoded.photos.forEach(photo=>{
+                const img=document.createElement("img");
+                img.src=photo;
+                gallery.appendChild(img);
+            });
+        }
+
+        createFloatingHearts();
+    }catch{
+        alert("Invalid link.");
+    }
+}
+
+function openEnvelope(){
+    const env=document.querySelector(".envelope");
+    env.classList.add("open");
+    setTimeout(()=>{
+        document.getElementById("envelopeContainer").classList.add("hidden");
+        document.getElementById("cardContainer").classList.remove("hidden");
+    },800);
+}
+
+function createFloatingHearts(){
+    const container=document.getElementById("floatingHearts");
+    container.innerHTML="";
+    const hearts=["💕","💖","💗","💓"];
+    for(let i=0;i<12;i++){
+        const h=document.createElement("div");
+        h.className="floating-heart";
+        h.textContent=hearts[Math.floor(Math.random()*hearts.length)];
+        h.style.left=Math.random()*100+"%";
+        h.style.top=Math.random()*100+"%";
+        container.appendChild(h);
+    }
+}
+</script>
+
+</body>
+</html>
